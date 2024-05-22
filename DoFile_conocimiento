@@ -1,0 +1,341 @@
+*** ANALISIS EXPLOTARIO ***
+
+* Variable sexo
+codebook sexo // NO MISSING. Es categórica
+tab sexo // Falta etiquetar
+label define evelyn 0 "Masculino" 1 "Femenino"
+label value sexo evelyn
+tab sexo
+
+*Variable edad
+codebook edad // NO MISSING. Es numérica
+sum edad, detail // Parece NO NORMAL
+hist edad, normal // NO NORMAL (Método gráfico)
+swilk edad // p<0.05 --> NO NORMAL (Método estadístico)
+tabstat edad, s(p50 min max iqr)
+
+*Variable anios de egreso (an_egreso)
+codebook an_egreso // NO MISSING. Es numérica
+sum an_egreso, detail // Parece NO NORMAL
+hist an_egreso, normal // NO NORMAL
+swilk an_egreso // p<0.05 --> NO NORMAL
+tabstat an_egreso, s(p50 min max iqr)
+
+*Variable grado de estudio (grad_est)
+codebook grado_est // NO MISSING. Es categórica
+tab grado_est // Falta etiquetar
+label define grado 0 "Especialidad" 1 "Especialidad y Maestria" 2 "Especialidad, Maestría y Doctorado"
+label value grado_est grado
+tab grado_est
+
+*Variable lugar de residencia (residencia)
+codebook residencia // NO MISSING. Es categórica
+tab residencia // Falta etiquetar
+label define resi 0 "Lima metropolitana" 1 "Lima provincia" 2 "Otro departamento"
+label value residencia resi
+tab residencia
+
+*Variable numero de pacientes por dia (num_pac_dia)
+codebook num_pac_dia // NO MISSING. Es categórica
+tab num_pac_dia // Falta etiquetar
+label define num_paciente 1 "4 a 6 pacientes" 2 "7 a 9 pacientes" 3 "10 a más pacientes"
+label value num_pac_dia num_paciente
+tab num_pac_dia
+
+*Variable sector laboral (sec_laboral)
+codebook sec_laboral // NO MISSING. Es categórica
+tab sec_laboral // Falta etiquetar
+label define sector 1 "Público" 2 "Privado" 3 "Ambos"
+label value sec_laboral sector
+tab sec_laboral
+
+*Variable lugar de trabajo (lug_trab)
+codebook lug_trab // NO MISSING. Es categórica
+tab lug_trab // Falta etiquetar
+label define lugar 1 "Lima metropolitana" 2 "Lima provincia" 3 "Otro departamento"
+label value lug_trab lugar
+tab lug_trab
+
+
+*** DEFINICION OPERACIONAL DE CONOCIMIENTO ***
+
+gen etio = p1 + p2 + p3 + p4
+gen clin = p5 + p6 + p7 + p8
+gen diag = p9 + p10 + p11 + p12
+gen tto = p13 + p14 + p15 + p16
+egen total = rowtotal(p1-p16)
+gen nota = (total*20)/16
+
+*Punto de corte con percentiles
+sum nota, detail // bajo<13.75, medio<16.25, alto>=16.25
+gen conoc_per_2 = 1 if nota < 13.75
+replace conoc_per_2 = 2 if nota>=13.75 & nota<16.25
+replace conoc_per_2 = 3 if nota>=16.25
+tab conoc_per
+label define percen 1 "Bajo" 2 "Medio" 3 "Alto"
+label value conoc_per_2 percen
+tab conoc_per_2
+
+*Punto de corte con teoria de Bloom
+gen conoc_bloom = 1 if nota<12 // bajo
+replace conoc_bloom = 2 if nota>=12 & nota<16 // medio
+replace conoc_bloom = 3 if nota>=16 // alto
+tab conoc_bloom
+label define bloom 1 "Bajo" 2 "Medio" 3 "Alto"
+label value conoc_bloom bloom
+tab conoc_bloom
+
+
+*** PROCESAMIENTO INFERENCIAL_1 ***
+
+*** ANALISIS BIVARIADO (Dependiente: Conocimiento / Independiente: Resto)
+
+** Conocimiento vs sexo
+tab conoc_per sexo
+tab conoc_per sexo, exp
+tab conoc_per sexo, exact // p=0.877 --> No hay asociacion
+spearman conoc_per sexo // p=0.5972 --> No hay asociacion
+
+tab conoc_bloom sexo
+tab conoc_bloom sexo, exp
+tab conoc_bloom sexo, chi2 // p=0.448 --> No hay asociacion
+spearman conoc_bloom sexo // p=0.6260 --> No hay asociacion
+
+
+** Conocimiento vs edad
+hist edad, normal
+hist edad if conoc_per==1, normal // No normal
+hist edad if conoc_per==2, normal // No normal 
+hist edad if conoc_per==3, normal // No normal
+oneway edad conoc_perc // Bartlett's=0.756 --> Varianzas iguales
+	Valor p --> 0.4983 // No hay asociación
+spearman edad conoc_perc // Valor p=0.4499 --> No hay asociación
+
+hist edad if conoc_bloom==1, normal // No normal
+hist edad if conoc_bloom==2, normal // No normal 
+hist edad if conoc_bloom==3, normal // No normal
+oneway edad conoc_bloom // Bartlett's=0.113 --> Varianzas iguales
+	Valor p --> 0.2405 // No hay asociacion
+spearman edad conoc_bloom // Valor p=0.8584 --> No asociacion
+
+
+** Conocimiento vs anios de egreso
+hist an_egreso, normal
+hist an_egreso if conoc_per==1, normal // No normal
+hist an_egreso if conoc_per==2, normal // No normal 
+hist an_egreso if conoc_per==3, normal // No normal
+oneway an_egreso conoc_perc // Bartlett's=0.677 --> Varianzas iguales
+	Valor p --> 0.3979 // No hay asociación
+spearman an_egreso conoc_perc // p=0.6623 --> No hay asociacion
+
+hist an_egreso if conoc_bloom==1, normal // No normal
+hist an_egreso if conoc_bloom==2, normal // No normal 
+hist an_egreso if conoc_bloom==3, normal // No normal
+oneway an_egreso conoc_bloom // Bartlett's=0.133 --> Varianzas iguales
+	Valor p --> 0.0684 // No hay asociacion
+spearman an_egreso conoc_bloom // p=0.2815 --> No hay asociacion
+
+
+** Conocimiento vs grado de estudios (grado_est)
+tab conoc_per grado_est
+tab conoc_per grado_est, exp
+tab conoc_per grado_est, exact // p=0.421 --> No hay asociacion
+spearman conoc_per grado_est // p=0.2848 --> No hay asociacion
+
+tab conoc_bloom grado_est
+tab conoc_bloom grado_est, exp
+tab conoc_bloom grado_est, exact // p=0.950 --> No asociacion
+spearman conoc_bloom grado_est // p=0.5580 --> No hay asociacion
+
+
+** Conocimiento vs numero de pacientes por dia (num_pac_dia)
+tab conoc_per num_pac_dia
+tab conoc_per num_pac_dia, exp
+tab conoc_per num_pac_dia, chi2 // p=0.562 --> No hay asociacion
+spearman conoc_per num_pac_dia // p=0.4620 --> No hay asociacion
+
+tab conoc_bloom num_pac_dia
+tab conoc_bloom num_pac_dia, exp
+tab conoc_bloom num_pac_dia, chi2 // p=0.065 --> No asociacion
+spearman conoc_bloom num_pac_dia // p=0.3307 --> No hay asociacion
+
+
+** Conocimiento vs sector laboral (sec_laboral)
+tab conoc_per sec_laboral
+tab conoc_per sec_laboral, exp
+tab conoc_per sec_laboral, exact // p=0.859 --> No hay asociacion
+spearman conoc_per sec_laboral // p= 0.2631 --> No hay asociacion
+
+tab conoc_bloom sec_laboral
+tab conoc_bloom sec_laboral, exp
+tab conoc_bloom sec_laboral, exact // p=0.420 --> No asociacion
+spearman conoc_bloom sec_laboral // p=0.6349 --> No hay asociacion
+
+
+
+
+*** PROCESAMIENTO INFERENCIAL_2 ***
+
+*** ANALISIS BIVARIADO (Dependiente: Conocimiento / Independiente: Resto)
+
+** Conocimiento vs sexo
+tab conoc_per_2 sexo
+tab conoc_per_2 sexo, exp
+tab conoc_per_2 sexo, chi2 // p=0.988 --> No hay asociacion
+spearman conoc_per_2 sexo // p=0.8982 --> No hay asociacion
+
+tab conoc_bloom sexo
+tab conoc_bloom sexo, exp
+tab conoc_bloom sexo, chi2 // p=0.448 --> No hay asociacion
+spearman conoc_bloom sexo // p=0.6260 --> No hay asociacion
+
+
+** Conocimiento vs edad
+hist edad, normal
+hist edad if conoc_per_2==1, normal // No normal
+hist edad if conoc_per_2==2, normal // No normal 
+hist edad if conoc_per_2==3, normal // No normal
+oneway edad conoc_per_2 // Bartlett's=0.104 --> Varianzas iguales
+	Valor p --> 0.5279 // No hay asociación
+kwallis edad, by(conoc_per_2) // p=0.8405
+spearman edad conoc_per_2 // Valor p=0.6318 --> No hay asociación
+
+hist edad if conoc_bloom==1, normal // No normal
+hist edad if conoc_bloom==2, normal // No normal 
+hist edad if conoc_bloom==3, normal // No normal
+oneway edad conoc_bloom // Bartlett's=0.113 --> Varianzas iguales
+	Valor p --> 0.2405 // No hay asociacion
+kwallis edad, by(conoc_bloom) // p=0.4488
+spearman edad conoc_bloom // Valor p=0.8584 --> No asociacion
+
+
+** Conocimiento vs anios de egreso
+hist an_egreso, normal
+hist an_egreso if conoc_per_2==1, normal // No normal
+hist an_egreso if conoc_per_2==2, normal // No normal 
+hist an_egreso if conoc_per_2==3, normal // No normal
+oneway an_egreso conoc_per_2 // Bartlett's=0.135 --> Varianzas iguales
+	Valor p --> 0.4470 // No hay asociación
+kwallis an_egreso, by(conoc_per_2) // p=6209 --> No hay asociacion
+spearman an_egreso conoc_per_2 // p=0.5011 --> No hay asociacion
+
+hist an_egreso if conoc_bloom==1, normal // No normal
+hist an_egreso if conoc_bloom==2, normal // No normal 
+hist an_egreso if conoc_bloom==3, normal // No normal
+oneway an_egreso conoc_bloom // Bartlett's=0.133 --> Varianzas iguales
+	Valor p --> 0.0684 // No hay asociacion
+spearman an_egreso conoc_bloom // p=0.2815 --> No hay asociacion
+
+
+** Conocimiento vs grado de estudios (grado_est)
+tab conoc_per_2 grado_est
+tab conoc_per_2 grado_est, exp
+tab conoc_per_2 grado_est, exact // p=0.970 --> No hay asociacion
+spearman conoc_per_2 grado_est // p=0.5787 --> No hay asociacion
+
+tab conoc_bloom grado_est
+tab conoc_bloom grado_est, exp
+tab conoc_bloom grado_est, exact // p=0.950 --> No asociacion
+spearman conoc_bloom grado_est // p=0.5580 --> No hay asociacion
+
+
+** Conocimiento vs numero de pacientes por dia (num_pac_dia)
+tab conoc_per_2 num_pac_dia
+tab conoc_per_2 num_pac_dia, exp
+tab conoc_per_2 num_pac_dia, chi2 // p=0.008 --> Hay asociacion
+spearman conoc_per_2 num_pac_dia // p=0.4909 --> No hay correlación
+
+tab conoc_bloom num_pac_dia
+tab conoc_bloom num_pac_dia, exp
+tab conoc_bloom num_pac_dia, chi2 // p=0.065 --> No asociacion
+spearman conoc_bloom num_pac_dia // p=0.3307 --> No hay asociacion
+
+
+** Conocimiento vs sector laboral (sec_laboral)
+tab conoc_per_2 sec_laboral
+tab conoc_per_2 sec_laboral, exp
+tab conoc_per_2 sec_laboral, exact // p=0.085 --> No hay asociacion
+spearman conoc_per_2 sec_laboral // p= 0.4510 --> No hay asociacion
+
+tab conoc_bloom sec_laboral
+tab conoc_bloom sec_laboral, exp
+tab conoc_bloom sec_laboral, exact // p=0.420 --> No asociacion
+spearman conoc_bloom sec_laboral // p=0.6349 --> No hay asociacion
+
+
+
+*** CONSTRUCCIÓN DE TABLAS ***
+
+* TABLA 1 *
+count
+
+tab sexo
+
+tabstat edad, s(p50 min max iqr)
+
+tab grado_est
+
+tabstat an_egreso, s(p50 min max iqr)
+
+tab num_pac_dia
+
+
+
+* TABLA 2 *
+tab conoc_per_2
+
+tab conoc_bloom
+
+
+
+* TABLA 3 *
+tab sexo conoc_per_2, chi2 row // p=0.988 --> No hay asociacion0
+
+tabstat edad if conoc_per_2==1, s(p50 min max)
+tabstat edad if conoc_per_2==2, s(p50 min max)
+tabstat edad if conoc_per_2==3, s(p50 min max)
+kwallis edad, by(conoc_per_2) // p=0.8405
+
+tab grado_est conoc_per_2, exact row // p=0.970 --> No hay asociacion
+
+kwallis an_egreso, by(conoc_per_2) // p=6209 --> No hay asociacion
+
+tab num_pac_dia conoc_per_2 , chi2 row // p=0.008 --> Hay asociacion
+
+tab sec_laboral conoc_per_2, exact row // p=0.085 --> No hay asociacion
+
+
+
+* TABLA 4 *
+tab sexo conoc_bloom, chi2 row // p=0.448 --> No hay asociacion0
+
+tabstat edad if conoc_bloom==1, s(p50 min max)
+tabstat edad if conoc_bloom==2, s(p50 min max)
+tabstat edad if conoc_bloom==3, s(p50 min max)
+kwallis edad, by(conoc_bloom) // p=0.4488
+
+tab grado_est conoc_bloom, exact row // p=0.950 --> No hay asociacion
+
+kwallis an_egreso, by(conoc_bloom) // p=0.0686 --> No hay asociacion
+
+tab num_pac_dia conoc_bloom, chi2 row // p=0.065 --> No hay asociacion
+
+tab sec_laboral conoc_bloom, exact row // p=0.420 --> No hay asociacion
+
+
+
+
+
+
+* TABLA SUPLEMENTARIA 2 *
+
+spearman etio edad
+spearman clin edad
+spearman diag edad
+spearman tto edad
+sperman total edad
+
+
+
+* TABLA SUPLEMENTARIA 3 *
+tab conoc_per_2 etio
